@@ -2,14 +2,19 @@ import socket
 
 connection_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
-connection_socket.connect((socket.gethostname(),8080))
+try:
+    connection_socket.connect((socket.gethostname(),8080))
+    condition = True
 
-msg = connection_socket.recv(1024)
-print(msg.decode("utf-8"))
+    while condition:
+        msg = connection_socket.recv(1024)
+        print(msg.decode("utf-8"))
+        sendto = input("")
+        connection_socket.send(sendto.encode("utf-8"))
+        condition = False
 
-sendto = input("")
-
-connection_socket.send(sendto.encode("utf-8"))
+except:
+    print("Unable to establish connection with the server.")
 
 ##Ip address of target computer and selected port
 #host_address = '192.168.0.207'
