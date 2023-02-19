@@ -1,4 +1,8 @@
 import socket
+import threading
+
+#thread for receiving messages
+#thread for server command
 
 #Maybe later make it an option to use switch between maybe ipv4/ipv6 and tcp/udp
 server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -16,6 +20,12 @@ nicknames = []
 
 condition = True
 
+def server_command():
+    command = input("COMMAND")
+    if(command=="end"):
+        condition = False
+    return condition
+
 while condition:
     client_socket, client_address = server_socket.accept()
     client_socket.send("You succesfully connected to the server. Who are you?".encode("utf-8"))
@@ -24,8 +34,8 @@ while condition:
     client_nickname = client_socket.recv(1024).decode("utf-8")
     print(f"{client_address} nickname is: {client_nickname}")
     nicknames.append(client_nickname)
-    if client_nickname == "end":
-        condition = False
+    #make it a thread
+    condition = server_command()
 server_socket.close()
 print("Server application terminated.")
 
