@@ -13,6 +13,7 @@ server_socket.bind((socket.gethostname(),port))
 
 #What exacly is happening?
 server_socket.listen(1)
+print("Awaiting clients...")
 
 #List of connected clients and their nicknames, the same values with the same indexes correspond to the same client
 addresses = []
@@ -21,12 +22,12 @@ nicknames = []
 condition = True
 
 def server_command():
-    command = input("COMMAND")
+    command = input()
     if(command=="end"):
         condition = False
     return condition
 
-while condition:
+def accept_client(server_socket,addresses,nicknames):
     client_socket, client_address = server_socket.accept()
     client_socket.send("You succesfully connected to the server. Who are you?".encode("utf-8"))
     print(f"{client_address} connected to the server.")
@@ -34,8 +35,16 @@ while condition:
     client_nickname = client_socket.recv(1024).decode("utf-8")
     print(f"{client_address} nickname is: {client_nickname}")
     nicknames.append(client_nickname)
-    #make it a thread
-    condition = server_command()
+
+t1 = threading.Thread(target=accept_client, args=(server_socket,addresses,nicknames))
+#t2 = threading.Thread(target=server_command)
+
+semaphore = threading.Semaphore(1)
+
+while condition:
+    semaphore.acquire()
+    t1.start()
+
 server_socket.close()
 print("Server application terminated.")
 
