@@ -1,5 +1,6 @@
 import socket
 import threading
+import sys
 
 #host = socket.gethostname() 
 host = '127.0.0.1'
@@ -20,27 +21,53 @@ server_socket.listen()
 def start():
     clients = []
     addresses = []
+    nicknames = []
     condition = True
+
+    def send_to_all_clients(message):
+        for client in clients:
+            client.send(message)
 
     #TODO - function dedicated for commands from server, add other functions
     def server_commands():
         nonlocal condition
-        command = input("")
-        if command == "end":
-            print("Server forcefully terminated.")
-            condition = False
-            return
+        while condition:
+            print("SA")
+            command = input("")
+            if command == "end":
+                print("Server forcefully terminated.")
+                #for client in clients:
+                #    client.send("S3rv3r f0rc3f8ll7 t3rm1n4ted.".encode(coding))
+                #    client.close()
+                server_socket.close()
+                condition = False
+                return
+            elif command == "users":
+                if len(nicknames) == 0:
+                    print("Currently there are no users connected.")
+                else:
+                    print(nicknames)
+
+    print("Server started.")
+    print("Awaiting for connections...")
 
     while condition:
-        print("Server started.")
-        if len(clients) == 0:
-            print("Awaiting for connections...")
+        print(condition)
         t1 = threading.Thread(target=server_commands, args=())
         t1.start()
-        #server_commands()
         client_socket, client_address = server_socket.accept()
+        print(f"{client_socket} tries to connect to the server.")
+        client_socket.send("N1ckn4m3".encode(coding))
         client_nickname = client_socket.recv(buffer).decode(coding)
-        print(client_nickname)
-        t1.join()
+
+        clients.append(client_socket)
+        addresses.append(client_address)
+        nicknames.append(client_nickname)
+
+        send_to_all_clients(f'{client_nickname} just connected to the server.'.encode(coding))
+
+        #server_commands()
+
+        #t1.join()
 
 start()
