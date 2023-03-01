@@ -1,41 +1,61 @@
 import socket
-import sys
 import threading
+from datetime import datetime
 
-#TODO make user choose port number, IP address, and maybe coding
-host = '127.0.0.1'
+ip = '127.0.0.1'
 port = 55555
 coding = "utf-8"
-#TODO - take care of cases when the buffer is overflown, maybe use header
 buffer = 1024
 
 nickname = input("Enter your nickname: ")
 
 client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+client_socket.connect((ip,port))
 
-try:
-    client_socket.connect((host,port))
-except:
-    print("Unable to connect.")
-    sys.exit(0)
+stop_condition = threading.Event()
 
 def receive_message():
     while True:
-        recv_message = client_socket.recv(buffer).decode(coding)
-        if recv_message == "N1ckn4m3":
-            client_socket.send(nickname.encode(coding))
-        elif recv_message == "S3rv3r f0rc3f8ll7 t3rm1n4ted":
-            print("Server forcefully terminated.")
+
+        if stop_condition.is_set():
+            break
+
+        try:
+            message = client_socket.recv(buffer).decode(coding)
+            if message == 'N1CKN4M3':
+                client_socket.send(nickname.encode(coding))
+            else:
+                print(message)
+        #This except does not work
+        except:
+            print("Connection terminated by the server side.")
             client_socket.close()
             break
-        else:
-            print(recv_message)
 
 def send_message():
-    pass
-#client_socket.send(nickname.encode(coding))
+    while True:
 
-t1 = threading.Thread(target=receive_message,args=())
-t1.start()
+        if stop_condition.is_set():
+            break
 
-print("Connection established.")
+        message = input("")
+        if message == "":
+            pass
+        elif message[0] == '/':
+            if message[1:] == 'disconnect':
+                client_socket.send(message.encode(coding))
+                client_socket.close()
+                stop_condition.set()
+                print("You are disconnected from the server.")
+        else:
+            now = datetime.now()
+            time = now.strftime("%H:%M:%S")
+            client_socket.send(f'[{time}]{nickname}: {message}'.encode(coding))
+
+receive_thread = threading.Thread(target=receive_message, args=())
+receive_thread.start()
+
+send_thread = threading.Thread(target=send_message, args=())
+send_thread.start()
+
+#client_socket.close()

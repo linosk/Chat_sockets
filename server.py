@@ -1,73 +1,84 @@
 import socket
 import threading
-import sys
+import time
 
-#host = socket.gethostname() 
-host = '127.0.0.1'
-#TODO - allow to choose port
+ip = '127.0.0.1'
 port = 55555
-#TODO - allow a server to change encoding - MAYBE
 coding = "utf-8"
-#TODO - take care of cases when the buffer is overflown, maybe use header
 buffer = 1024
 
 server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-#TODO - allow given user to reconnect
-server_socket.bind((host,port))
-
-#TODO - (maybe) pass value in listen
+server_socket.bind((ip,port))
 server_socket.listen()
 
-def start():
-    clients = []
-    addresses = []
-    nicknames = []
-    condition = True
+#Sockets
+clients = []
+#Nicknames
+nicknames = []
+#Addresses
+addresses = []
+#Threads
+threads = []
 
-    def send_to_all_clients(message):
-        for client in clients:
-            client.send(message)
+stop_condition = threading.Event()
 
-    #TODO - function dedicated for commands from server, add other functions
-    def server_commands():
-        nonlocal condition
-        while condition:
-            print("SA")
-            command = input("")
-            if command == "end":
-                print("Server forcefully terminated.")
-                #for client in clients:
-                #    client.send("S3rv3r f0rc3f8ll7 t3rm1n4ted.".encode(coding))
-                #    client.close()
-                server_socket.close()
-                condition = False
-                return
-            elif command == "users":
-                if len(nicknames) == 0:
-                    print("Currently there are no users connected.")
-                else:
-                    print(nicknames)
+#Sever broadcasts message to every client
+def broadcast_message(message):
+    for client in clients:
+        client.send(message)
 
-    print("Server started.")
-    print("Awaiting for connections...")
+def handle_client(client):
+    while True:
 
-    while condition:
-        print(condition)
-        t1 = threading.Thread(target=server_commands, args=())
-        t1.start()
-        client_socket, client_address = server_socket.accept()
-        print(f"{client_socket} tries to connect to the server.")
-        client_socket.send("N1ckn4m3".encode(coding))
-        client_nickname = client_socket.recv(buffer).decode(coding)
+        if stop_condition.is_set():
+            break
 
-        clients.append(client_socket)
-        addresses.append(client_address)
-        nicknames.append(client_nickname)
+        try:
+            message = client.recv(buffer)
+            message_decoded = message.decode(coding)
+            if message_decoded[0] == '/':
+                if message_decoded[1:] == 'disconnect':
+                    client.close()
+                    #time.sleep(0.5)
+                    index = clients.index(client)
+                    clients.remove(index)
+                    #nickname = nicknames[index]
+                    nicknames.remove(index)
+                    addresses.remove(index)
+                    threads.remove(index)
+                    #broadcast_message(f'{nickname} disconnected from the server.')
+                    stop_condition.set()
 
-        send_to_all_clients(f'{client_nickname} just connected to the server.'.encode(coding))
+            else:
+                broadcast_message(message)
+        except:
+            pass
+            #client.send('Connection terminated.')
+            #client.close()
+            #break
 
-        #server_commands()
+def server_run():
+    while True:
+        try:
+            client_socket, client_address = server_socket.accept()
+            client_socket.send('N1CKN4M3'.encode(coding))
+            client_nickname = client_socket.recv(buffer).decode(coding)
+            print(f'{client_socket} tries to connect from {client_address} and is called {client_nickname}')
 
-        #t1.join()
+            clients.append(client_socket)
+            nicknames.append(client_nickname)
+            addresses.append(client_address)
 
-start()
+            broadcast_message(f'{client_nickname} joined the chat.'.encode(coding))
+            client_socket.send('You are connected to the server.'.encode("utf-8"))
+
+            client_thread = threading.Thread(target=handle_client, args=(client_socket,))
+            client_thread.start()
+            if client_thread not in threads:
+                threads.append(client_thread)
+
+        except KeyboardInterrupt:
+            #server_socket.close()
+            break
+
+server_run()
