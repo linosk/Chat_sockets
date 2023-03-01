@@ -1,5 +1,6 @@
 import socket
 import threading
+import time
 
 ip = '127.0.0.1'
 port = 55555
@@ -16,6 +17,10 @@ clients = []
 nicknames = []
 #Addresses
 addresses = []
+#Threads
+threads = []
+
+stop_condition = threading.Event()
 
 #Sever broadcasts message to every client
 def broadcast_message(message):
@@ -24,13 +29,33 @@ def broadcast_message(message):
 
 def handle_client(client):
     while True:
+
+        if stop_condition.is_set():
+            break
+
         try:
             message = client.recv(buffer)
-            broadcast_message(message)
+            message_decoded = message.decode(coding)
+            if message_decoded[0] == '/':
+                if message_decoded[1:] == 'disconnect':
+                    client.close()
+                    #time.sleep(0.5)
+                    index = clients.index(client)
+                    clients.remove(index)
+                    #nickname = nicknames[index]
+                    nicknames.remove(index)
+                    addresses.remove(index)
+                    threads.remove(index)
+                    #broadcast_message(f'{nickname} disconnected from the server.')
+                    stop_condition.set()
+
+            else:
+                broadcast_message(message)
         except:
-            client.send('Connection terminated.')
-            client.close()
-            break
+            pass
+            #client.send('Connection terminated.')
+            #client.close()
+            #break
 
 def server_run():
     while True:
@@ -49,8 +74,11 @@ def server_run():
 
             client_thread = threading.Thread(target=handle_client, args=(client_socket,))
             client_thread.start()
+            if client_thread not in threads:
+                threads.append(client_thread)
 
         except KeyboardInterrupt:
-            pass
+            #server_socket.close()
+            break
 
 server_run()

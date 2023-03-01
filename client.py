@@ -12,8 +12,14 @@ nickname = input("Enter your nickname: ")
 client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 client_socket.connect((ip,port))
 
+stop_condition = threading.Event()
+
 def receive_message():
     while True:
+
+        if stop_condition.is_set():
+            break
+
         try:
             message = client_socket.recv(buffer).decode(coding)
             if message == 'N1CKN4M3':
@@ -28,9 +34,19 @@ def receive_message():
 
 def send_message():
     while True:
+
+        if stop_condition.is_set():
+            break
+
         message = input("")
         if message == "":
             pass
+        elif message[0] == '/':
+            if message[1:] == 'disconnect':
+                client_socket.send(message.encode(coding))
+                client_socket.close()
+                stop_condition.set()
+                print("You are disconnected from the server.")
         else:
             now = datetime.now()
             time = now.strftime("%H:%M:%S")
