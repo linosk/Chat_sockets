@@ -20,42 +20,73 @@ addresses = []
 #Threads
 threads = []
 
+#Use for sever not for client
 stop_condition = threading.Event()
 
 #Sever broadcasts message to every client
 def broadcast_message(message):
+    print(f'Message will be sent to {nicknames}.')
     for client in clients:
         client.send(message)
+
+def remove_connection_records(index):
+    clients.remove(clients[index])
+    nicknames.remove(nicknames[index])
+    addresses.remove(addresses[index])
+    threads.remove(threads[index])
 
 def handle_client(client):
     while True:
 
+        #This cannot be used because every client stops
+        #Unless
         if stop_condition.is_set():
+            stop_condition.clear()
             break
 
         try:
             message = client.recv(buffer)
             message_decoded = message.decode(coding)
             if message_decoded[0] == '/':
-                if message_decoded[1:] == 'disconnect':
-                    client.close()
-                    #time.sleep(0.5)
-                    index = clients.index(client)
-                    clients.remove(index)
-                    #nickname = nicknames[index]
-                    nicknames.remove(index)
-                    addresses.remove(index)
-                    threads.remove(index)
-                    #broadcast_message(f'{nickname} disconnected from the server.')
-                    stop_condition.set()
+                pass
+                #if message_decoded[1:] == 'disconnect':
+                #    client.close()
+                #    index = clients.index(client)
+                #    clients.remove(index)
+                #    nickname = nicknames[index]
+                #    print(nickname)
+                #    nicknames.remove(index)
+                #    addresses.remove(index)
+                #    threads.remove(index)
+                #    broadcast_message(f'{nickname} disconnected from the server.')
+                #    stop_condition.set()
 
             else:
                 broadcast_message(message)
         except:
-            pass
+            #condition = False
+            #pass
+            
+            stop_condition.set()
+
+            """
+            index = clients.index(client)
+            #print(index)
+            #client.close()
+            print(f'{client} disconnected.')
+            remove_connection_records(index)
+            #broadcast_message(f'{nicknames[index]} disconnected from the server.')
+            condition = True
+            """
+
+            """
+            #break
+            #client.close()
+            #stop_condition.set()
             #client.send('Connection terminated.')
             #client.close()
             #break
+            """
 
 def server_run():
     while True:
@@ -78,7 +109,7 @@ def server_run():
                 threads.append(client_thread)
 
         except KeyboardInterrupt:
-            #server_socket.close()
+            server_socket.close()
             break
 
 server_run()

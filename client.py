@@ -24,6 +24,10 @@ def receive_message():
             message = client_socket.recv(buffer).decode(coding)
             if message == 'N1CKN4M3':
                 client_socket.send(nickname.encode(coding))
+            elif message == '':
+                client_socket.close()
+                stop_condition.set()
+                print("Connection terminated by the server side.")
             else:
                 print(message)
         #This except does not work
