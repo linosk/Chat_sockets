@@ -1,1 +1,7 @@
 https://realpython.com/python-sockets/
+
+Issue:
+
+When client A tries to disconnect the actual disconnect does
+not happens until client B sends message.
+When client A is the only one disconnecting does not work.
