@@ -20,3 +20,10 @@ Still something wrong with disconnect from the client side
 and server side
 
 RESOLVED
+
+Issue:
+
+Time of the message should be added at the server side - RESOLVED
+Function "terminated connection by the server side" does not work - RESOLVED NOT REALLY
+Client should not get information about its own connection/disconnection
+
