@@ -62,4 +62,9 @@ receive_thread.start()
 send_thread = threading.Thread(target=send_message, args=())
 send_thread.start()
 
+#Check whether threads are running
+if stop_condition.is_set():
+    print(receive_thread.is_alive())
+    print(send_thread.is_alive())
+
 #client_socket.close()

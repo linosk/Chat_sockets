@@ -48,8 +48,8 @@ def handle_client(client):
             message = client.recv(buffer)
             message_decoded = message.decode(coding)
             if message_decoded[0] == '/':
-                pass
-                #if message_decoded[1:] == 'disconnect':
+                if message_decoded[1:] == 'disconnect':
+                    print('A')
                 #    client.close()
                 #    index = clients.index(client)
                 #    clients.remove(index)
@@ -67,6 +67,7 @@ def handle_client(client):
             #condition = False
             #pass
             
+            print('B')
             stop_condition.set()
 
             """
@@ -111,5 +112,7 @@ def server_run():
         except KeyboardInterrupt:
             server_socket.close()
             break
+
+print("Awaiting connections...")
 
 server_run()
