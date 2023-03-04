@@ -5,3 +5,25 @@ Issue:
 When client A tries to disconnect the actual disconnect does
 not happens until client B sends message.
 When client A is the only one disconnecting does not work.
+
+Reproduction:
+
+Case 1.
+
+Server start
+Adam connects
+Eve connects
+
+Adam sends /disconnect what happens in adam client and sever?
+
+Still something wrong with disconnect from the client side
+and server side
+
+RESOLVED
+
+Issue:
+
+Time of the message should be added at the server side - RESOLVED
+Function "terminated connection by the server side" does not work - RESOLVED NOT REALLY
+Client should not get information about its own connection/disconnection
+

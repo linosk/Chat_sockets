@@ -1,6 +1,6 @@
 import socket
 import threading
-import time
+from datetime import datetime
 
 ip = '127.0.0.1'
 port = 55555
@@ -20,14 +20,20 @@ addresses = []
 #Threads
 threads = []
 
-#Use for sever not for client
-stop_condition = threading.Event()
-
 #Sever broadcasts message to every client
-def broadcast_message(message):
+def broadcast_message(message, type_of_broadcast):
+    message_decoded = message.decode(coding)
     print(f'Message will be sent to {nicknames}.')
-    for client in clients:
-        client.send(message)
+    if type_of_broadcast == 'client_message':
+        for client in clients:
+            now = datetime.now()
+            time = now.strftime("%H:%M:%S")
+            client.send(f'[{time}]{message_decoded}'.encode(coding))
+    elif type_of_broadcast == 'connection_info':
+        for client in clients:
+            client.send(message)
+    else:
+        pass
 
 def remove_connection_records(index):
     clients.remove(clients[index])
@@ -36,57 +42,38 @@ def remove_connection_records(index):
     threads.remove(threads[index])
 
 def handle_client(client):
+    stop_condition = threading.Event()
+    index = clients.index(client)
+    nickname = nicknames[index]
     while True:
 
-        #This cannot be used because every client stops
-        #Unless
         if stop_condition.is_set():
-            stop_condition.clear()
+            print(f'{nickname} disconnected from the server.')
+            broadcast_message(f'{nickname} disconnected from the server.'.encode(coding),'connection_info')
             break
 
         try:
             message = client.recv(buffer)
             message_decoded = message.decode(coding)
             if message_decoded[0] == '/':
-                pass
-                #if message_decoded[1:] == 'disconnect':
-                #    client.close()
-                #    index = clients.index(client)
-                #    clients.remove(index)
-                #    nickname = nicknames[index]
-                #    print(nickname)
-                #    nicknames.remove(index)
-                #    addresses.remove(index)
-                #    threads.remove(index)
-                #    broadcast_message(f'{nickname} disconnected from the server.')
-                #    stop_condition.set()
+                if message_decoded[1:] == 'disconnect':
+                    if client in clients:
+                        #Client willingly disconnected
+                        print('A')
+                        stop_condition.set()
+                        client.close()
+                        remove_connection_records(index)
 
             else:
-                broadcast_message(message)
+                broadcast_message(message,'client_message')
         except:
-            #condition = False
-            #pass
             
-            stop_condition.set()
-
-            """
-            index = clients.index(client)
-            #print(index)
-            #client.close()
-            print(f'{client} disconnected.')
-            remove_connection_records(index)
-            #broadcast_message(f'{nicknames[index]} disconnected from the server.')
-            condition = True
-            """
-
-            """
-            #break
-            #client.close()
-            #stop_condition.set()
-            #client.send('Connection terminated.')
-            #client.close()
-            #break
-            """
+            #Disconnect from the client side possibly unwillingly
+            if client in clients:
+                print('B')
+                stop_condition.set()
+                client.close()
+                remove_connection_records(index)
 
 def server_run():
     while True:
@@ -100,7 +87,7 @@ def server_run():
             nicknames.append(client_nickname)
             addresses.append(client_address)
 
-            broadcast_message(f'{client_nickname} joined the chat.'.encode(coding))
+            broadcast_message(f'{client_nickname} joined the chat.'.encode(coding),'connection_info')
             client_socket.send('You are connected to the server.'.encode("utf-8"))
 
             client_thread = threading.Thread(target=handle_client, args=(client_socket,))
@@ -111,5 +98,7 @@ def server_run():
         except KeyboardInterrupt:
             server_socket.close()
             break
+
+print("Awaiting connections...")
 
 server_run()

@@ -28,13 +28,17 @@ def receive_message():
                 client_socket.close()
                 stop_condition.set()
                 print("Connection terminated by the server side.")
+            elif message == '' and not stop_condition.is_set:
+                client_socket.close()
+                stop_condition.set()
+                print("Connection terminated by the server side.")
             else:
                 print(message)
         #This except does not work
         except:
             print("Connection terminated by the server side.")
             client_socket.close()
-            break
+            stop_condition.set()
 
 def send_message():
     while True:
@@ -52,14 +56,21 @@ def send_message():
                 stop_condition.set()
                 print("You are disconnected from the server.")
         else:
-            now = datetime.now()
-            time = now.strftime("%H:%M:%S")
-            client_socket.send(f'[{time}]{nickname}: {message}'.encode(coding))
+            #Time of message should be added at the server side
+           #now = datetime.now()
+           #time = now.strftime("%H:%M:%S")
+            #client_socket.send(f'[{time}]{nickname}: {message}'.encode(coding))
+            client_socket.send(f'{nickname}: {message}'.encode(coding))
 
 receive_thread = threading.Thread(target=receive_message, args=())
 receive_thread.start()
 
 send_thread = threading.Thread(target=send_message, args=())
 send_thread.start()
+
+#Check whether threads are running
+if stop_condition.is_set():
+    print(receive_thread.is_alive())
+    print(send_thread.is_alive())
 
 #client_socket.close()
