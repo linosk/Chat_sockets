@@ -24,7 +24,7 @@ def receive_message():
             message = client_socket.recv(buffer).decode(coding)
             if message == 'N1CKN4M3':
                 client_socket.send(nickname.encode(coding))
-            elif message == '':
+            elif message == '' and not stop_condition.is_set:
                 client_socket.close()
                 stop_condition.set()
                 print("Connection terminated by the server side.")
@@ -34,7 +34,7 @@ def receive_message():
         except:
             print("Connection terminated by the server side.")
             client_socket.close()
-            break
+            stop_condition.set()
 
 def send_message():
     while True:
@@ -52,6 +52,7 @@ def send_message():
                 stop_condition.set()
                 print("You are disconnected from the server.")
         else:
+            #Time of message should be added at the server side
             now = datetime.now()
             time = now.strftime("%H:%M:%S")
             client_socket.send(f'[{time}]{nickname}: {message}'.encode(coding))

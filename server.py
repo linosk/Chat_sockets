@@ -20,8 +20,8 @@ addresses = []
 #Threads
 threads = []
 
-#Use for sever not for client
-stop_condition = threading.Event()
+#This should be only in the thread handle_scope()
+#stop_condition = threading.Event()
 
 #Sever broadcasts message to every client
 def broadcast_message(message):
@@ -36,12 +36,14 @@ def remove_connection_records(index):
     threads.remove(threads[index])
 
 def handle_client(client):
+    stop_condition = threading.Event()
+    index = clients.index(client)
+    nickname = nicknames[index]
     while True:
 
-        #This cannot be used because every client stops
-        #Unless
         if stop_condition.is_set():
-            stop_condition.clear()
+            print(f'{nickname} disconnected from the server.')
+            broadcast_message(f'{nickname} disconnected from the server.'.encode(coding))
             break
 
         try:
@@ -49,7 +51,14 @@ def handle_client(client):
             message_decoded = message.decode(coding)
             if message_decoded[0] == '/':
                 if message_decoded[1:] == 'disconnect':
-                    print('A')
+                    if client in clients:
+                        #Client willingly disconnected
+                        print('A')
+                        stop_condition.set()
+                        client.close()
+                        remove_connection_records(index)
+                        #print(f'{nickname} disconnected from the server.')
+                        #broadcast_message(f'{nickname} disconnected from the server.')
                 #    client.close()
                 #    index = clients.index(client)
                 #    clients.remove(index)
@@ -67,8 +76,15 @@ def handle_client(client):
             #condition = False
             #pass
             
-            print('B')
-            stop_condition.set()
+            #Disconnect from the client side possibly unwillingly
+            if client in clients:
+                print('B')
+                stop_condition.set()
+                client.close()
+                remove_connection_records(index)
+                #print(f'{nickname} disconnected from the server.')
+                #broadcast_message(f'{nickname} disconnected from the server.')
+                
 
             """
             index = clients.index(client)

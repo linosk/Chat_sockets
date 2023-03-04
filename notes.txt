@@ -16,4 +16,7 @@ Eve connects
 
 Adam sends /disconnect what happens in adam client and sever?
 
+Still something wrong with disconnect from the client side
+and server side
 
+RESOLVED
