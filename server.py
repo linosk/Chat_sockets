@@ -21,25 +21,29 @@ addresses = []
 threads = []
 
 #Sever broadcasts message to every client
-def broadcast_message(message, type_of_broadcast):
+def broadcast_message(message, type_of_broadcast, new_client):
     message_decoded = message.decode(coding)
     print(f'Message will be sent to {nicknames}.')
+
     if type_of_broadcast == 'client_message':
         for client in clients:
             now = datetime.now()
             time = now.strftime("%H:%M:%S")
             client.send(f'[{time}]{message_decoded}'.encode(coding))
+
     elif type_of_broadcast == 'connection_info':
         for client in clients:
-            client.send(message)
+            if not client == new_client:
+                client.send(message)
     else:
         pass
 
 def remove_connection_records(index):
-    clients.remove(clients[index])
-    nicknames.remove(nicknames[index])
-    addresses.remove(addresses[index])
-    threads.remove(threads[index])
+    if clients[index] in clients:
+        clients.remove(clients[index])
+        nicknames.remove(nicknames[index])
+        addresses.remove(addresses[index])
+        threads.remove(threads[index])
 
 def handle_client(client):
     stop_condition = threading.Event()
@@ -49,7 +53,7 @@ def handle_client(client):
 
         if stop_condition.is_set():
             print(f'{nickname} disconnected from the server.')
-            broadcast_message(f'{nickname} disconnected from the server.'.encode(coding),'connection_info')
+            broadcast_message(f'{nickname} disconnected from the server.'.encode(coding),'connection_info',client)
             break
 
         try:
@@ -59,18 +63,28 @@ def handle_client(client):
                 if message_decoded[1:] == 'disconnect':
                     if client in clients:
                         #Client willingly disconnected
-                        print('A')
                         stop_condition.set()
                         client.close()
                         remove_connection_records(index)
+                elif message_decoded[1:] == 'admin':
+                    client.send('P4SSW0RD'.encode(coding))
+                    password = client.recv(buffer).decode(coding)
+                    if password == '123':
+                        pass
+                    else:
+                        client.send('T3RM1N4T3'.encode(coding))
+                        if client in clients:
+                            stop_condition.set()
+                            client.close()
+                            remove_connection_records(index)
+
 
             else:
-                broadcast_message(message,'client_message')
+                broadcast_message(message,'client_message',client)
         except:
             
             #Disconnect from the client side possibly unwillingly
             if client in clients:
-                print('B')
                 stop_condition.set()
                 client.close()
                 remove_connection_records(index)
@@ -81,13 +95,14 @@ def server_run():
             client_socket, client_address = server_socket.accept()
             client_socket.send('N1CKN4M3'.encode(coding))
             client_nickname = client_socket.recv(buffer).decode(coding)
+
             print(f'{client_socket} tries to connect from {client_address} and is called {client_nickname}')
 
             clients.append(client_socket)
             nicknames.append(client_nickname)
             addresses.append(client_address)
 
-            broadcast_message(f'{client_nickname} joined the chat.'.encode(coding),'connection_info')
+            broadcast_message(f'{client_nickname} joined the chat.'.encode(coding),'connection_info',client_socket)
             client_socket.send('You are connected to the server.'.encode("utf-8"))
 
             client_thread = threading.Thread(target=handle_client, args=(client_socket,))
@@ -102,3 +117,5 @@ def server_run():
 print("Awaiting connections...")
 
 server_run()
+
+server_socket.close()
