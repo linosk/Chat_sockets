@@ -14,31 +14,47 @@ client_socket.connect((ip,port))
 
 stop_condition = threading.Event()
 
+message_recv = ""
+message_send = ""
+
 def receive_message():
     while True:
 
         if stop_condition.is_set():
             break
 
+        global message_send
+        global message_recv
+
         try:
-            message = client_socket.recv(buffer).decode(coding)
-            if message == 'N1CKN4M3':
+            message_recv = client_socket.recv(buffer).decode(coding)
+            if message_recv == 'N1CKN4M3':
                 client_socket.send(nickname.encode(coding))
-            elif message == '':
+            elif message_recv == 'P4SSW0RD':
+                pass
+            #    client_socket.send(password.encode(coding))
+            elif message_recv == 'T3RM1N4T3':
                 client_socket.close()
                 stop_condition.set()
-                print("Connection terminated by the server side.")
-            elif message == '' and not stop_condition.is_set:
+                print("Wrong password, connection terminated.")
+            elif message_recv == '':
                 client_socket.close()
                 stop_condition.set()
-                print("Connection terminated by the server side.")
+                if not message_send == '/disconnect':
+                    print("Connection terminated by the server side.")
+            elif message_recv == '' and not stop_condition.is_set:
+                client_socket.close()
+                stop_condition.set()
+                if not message_send == '/disconnect':
+                    print("Connection terminated by the server side.")
             else:
-                print(message)
-        #This except does not work
+                print(message_recv)
+
         except:
-            print("Connection terminated by the server side.")
             client_socket.close()
             stop_condition.set()
+            if not message_send == '/disconnect':
+                print("Connection terminated by the server side.")
 
 def send_message():
     while True:
@@ -46,31 +62,28 @@ def send_message():
         if stop_condition.is_set():
             break
 
-        message = input("")
-        if message == "":
+        global message_send
+        global message_recv
+
+        if message_recv == 'P4SSW0RD':
+            message_send = input("Password")
+        else:
+            message_send = input("")
+        if message_send == "":
             pass
-        elif message[0] == '/':
-            if message[1:] == 'disconnect':
-                client_socket.send(message.encode(coding))
+        elif message_send[0] == '/':
+            if message_send[1:] == 'disconnect':
+                client_socket.send(message_send.encode(coding))
                 client_socket.close()
                 stop_condition.set()
                 print("You are disconnected from the server.")
+            elif message_send[1:] == 'admin':
+                client_socket.send(message_send.encode(coding))
         else:
-            #Time of message should be added at the server side
-           #now = datetime.now()
-           #time = now.strftime("%H:%M:%S")
-            #client_socket.send(f'[{time}]{nickname}: {message}'.encode(coding))
-            client_socket.send(f'{nickname}: {message}'.encode(coding))
+            client_socket.send(f'{nickname}: {message_send}'.encode(coding))
 
 receive_thread = threading.Thread(target=receive_message, args=())
 receive_thread.start()
 
 send_thread = threading.Thread(target=send_message, args=())
 send_thread.start()
-
-#Check whether threads are running
-if stop_condition.is_set():
-    print(receive_thread.is_alive())
-    print(send_thread.is_alive())
-
-#client_socket.close()
