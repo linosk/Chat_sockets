@@ -1,6 +1,15 @@
 import socket
+import threading
 
 class Client:
+
+    nickname = ''
+
+    received = ''
+    sent = ''
+
+    coding = 'utf-8'
+    buffer = 1024 #Need to think about the case very sent message is over the buffer size
 
     #There may be some redundancy in checking whether the ipv4 address is correct
     def __check_ipv4__(ip_address):
@@ -82,6 +91,26 @@ class Client:
             return
         
         self.client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        Client.nickname = input('What is your nickname: ')
+    
+    def __receive_message__(self):
+        while True:
+            try:
+                Client.received = Client.client_socket.recv(Client.buffer).decode(Client.coding)
+                print(Client.received)
+            except:
+                pass
+
+    def __send_message__(self):
+        while True:
+            try:
+                if Client.received == 'N1CKN4ME':
+                    Client.client_socket.send(Client.nickname.encode(Client.coding))
+                else:
+                    Client.sent = input()
+                    Client.client_socket.send(Client.sent.encode(Client.coding))
+            except:
+                pass
 
     def connect_to_server(self,ip_address,port_number):
         
@@ -93,6 +122,16 @@ class Client:
                     self.client_socket.connect((ip_address,port_number))
                 except:
                     print('Unable to establish connection with the server.')
+                    return
+
+        check = self.client_socket.recv(Client.buffer).decode(Client.coding)
+        print(check)
+
+        #receive_thread = threading.Thread(target=Client.__receive_message__,args=(self,))
+        #receive_thread.start()
+#
+        #send_thread = threading.Thread(target=Client.__send_message__,args=(self,))
+        #send_thread.start()
 
 #The lines below makes sure that the code in this file will only be executed when this file is run directly, useful in the case of importing this file as a module
 def main():
