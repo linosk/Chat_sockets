@@ -93,21 +93,23 @@ class Client:
         self.nickname = input('What is your nickname: ')
     
     def __receive_message__(self):
+        #Should sending answers to special words be performed in receive function?
         while True:
             try:
                 self.received = self.client_socket.recv(self.buffer).decode(self.coding)
-                print(self.received)
+                if self.received == 'N1CKN4M3':
+                    print(self.nickname)
+                    self.client_socket.send(self.nickname.encode(self.coding))
+                else:
+                    print(self.received)
             except:
                 pass
 
     def __send_message__(self):
         while True:
             try:
-                if self.received == 'N1CKN4ME':
-                    self.client_socket.send(self.nickname.encode(self.coding))
-                else:
-                    self.sent = input()
-                    self.client_socket.send(self.sent.encode(self.coding))
+                self.sent = input()
+                self.client_socket.send(self.sent.encode(self.coding))
             except:
                 pass
 

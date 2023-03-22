@@ -102,13 +102,14 @@ class Server:
         self.server_socket.bind((self.ip_address,self.port_number))
 
     def __broadcast_message__(self,message):
-        for client in self.clients:
-            client.send(message.encode(self.coding))
+            for client in self.clients:
+                client.send(message)
 
     def __handle_client__(self,client):
         while True:
             try:
                 message = client.recv(self.buffer)
+                #Case of receving ''
                 self.__broadcast_message__(message)
             except:
                 pass
@@ -119,23 +120,24 @@ class Server:
         while True:
             try:
                 client_socket, client_address = self.server_socket.accept()
-                print(f'{client_socket} tries to connect.')
+                #print(f'{client_socket} tries to connect.')
                 client_socket.send('N1CKN4M3'.encode(self.coding))
                 client_nickname = client_socket.recv(self.buffer).decode(self.coding)
 
-                #print(client_nickname)
-#
-                #Server.clients.append(client_socket)
-                #Server.addresses.append(client_address)
-                #Server.nicknames.append(client_nickname)
-#
-                #Server.__broadcast_message__(f'{client_nickname} just connected to a server.')
-                #client_socket.send(f'Welcome to the server.'.encode(Server.coding))
-#
-                #client_thread = threading.Thread(target=Server.__handle_client__,args=(client_socket,))
-                #client_thread.start()
-                #if client_thread not in Server.threads:
-                #    Server.threads.append(client_thread)
+                self.__broadcast_message__(f'{client_nickname} just connected to a server.'.encode(self.coding))
+
+                self.clients.append(client_socket)
+                self.addresses.append(client_address)
+                self.nicknames.append(client_nickname)
+
+                print(self.clients)
+
+                client_socket.send(f'Hi {client_nickname}, welcome to the server.'.encode(self.coding))
+
+                client_thread = threading.Thread(target=self.__handle_client__,args=(client_socket,))
+                client_thread.start()
+                if client_thread not in self.threads:
+                    self.threads.append(client_thread)
 
             except KeyboardInterrupt:
                 self.server_socket.close()
