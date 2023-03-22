@@ -3,16 +3,8 @@ import threading
 
 class Client:
 
-    nickname = ''
-
-    received = ''
-    sent = ''
-
-    coding = 'utf-8'
-    buffer = 1024 #Need to think about the case very sent message is over the buffer size
-
     #There may be some redundancy in checking whether the ipv4 address is correct
-    def __check_ipv4__(ip_address):
+    def __check_ipv4__(self,ip_address):
 
         if len(ip_address)<7 or len(ip_address)>15:
             print(f'{ip_address} is not correct ipv4 address.')
@@ -57,7 +49,7 @@ class Client:
             return -1
     
     #At the moment well-known and registered port numbers are not usable
-    def __check_port_number__(port_number):
+    def __check_port_number__(self,port_number):
 
         if port_number < 0 or port_number > 65535:
             print(f'{port_number} is not correct port number.')
@@ -91,31 +83,40 @@ class Client:
             return
         
         self.client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        Client.nickname = input('What is your nickname: ')
+
+        self.received = ''
+        self.sent = ''
+
+        self.coding = 'utf-8'
+        self.buffer = 1024 #Need to think about the case very sent message is over the buffer size
+
+        self.nickname = input('What is your nickname: ')
     
     def __receive_message__(self):
+        #Should sending answers to special words be performed in receive function?
         while True:
             try:
-                Client.received = Client.client_socket.recv(Client.buffer).decode(Client.coding)
-                print(Client.received)
+                self.received = self.client_socket.recv(self.buffer).decode(self.coding)
+                if self.received == 'N1CKN4M3':
+                    print(self.nickname)
+                    self.client_socket.send(self.nickname.encode(self.coding))
+                else:
+                    print(self.received)
             except:
                 pass
 
     def __send_message__(self):
         while True:
             try:
-                if Client.received == 'N1CKN4ME':
-                    Client.client_socket.send(Client.nickname.encode(Client.coding))
-                else:
-                    Client.sent = input()
-                    Client.client_socket.send(Client.sent.encode(Client.coding))
+                self.sent = input()
+                self.client_socket.send(self.sent.encode(self.coding))
             except:
                 pass
 
     def connect_to_server(self,ip_address,port_number):
         
         if self.ip_version == 4:
-            if Client.__check_ipv4__(ip_address) == -1 or Client.__check_port_number__(port_number) == -1:
+            if self.__check_ipv4__(ip_address) == -1 or self.__check_port_number__(port_number) == -1:
                 return
             else:
                 try:
@@ -124,14 +125,11 @@ class Client:
                     print('Unable to establish connection with the server.')
                     return
 
-        check = self.client_socket.recv(Client.buffer).decode(Client.coding)
-        print(check)
+        receive_thread = threading.Thread(target=self.__receive_message__,args=())
+        receive_thread.start()
 
-        #receive_thread = threading.Thread(target=Client.__receive_message__,args=(self,))
-        #receive_thread.start()
-#
-        #send_thread = threading.Thread(target=Client.__send_message__,args=(self,))
-        #send_thread.start()
+        send_thread = threading.Thread(target=self.__send_message__,args=())
+        send_thread.start()
 
 #The lines below makes sure that the code in this file will only be executed when this file is run directly, useful in the case of importing this file as a module
 def main():
