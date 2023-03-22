@@ -3,16 +3,8 @@ import threading
 
 class Server:
 
-    clients = []
-    nicknames = []
-    addresses = []
-    threads = []
-
-    coding = 'utf-8'
-    buffer = 1024 #Need to think about the case very sent message is over the buffer size
-
     #There may be some redundancy in checking whether the ipv4 address is correct
-    def __check_ipv4__(ip_address):
+    def __check_ipv4__(self,ip_address):
 
         if len(ip_address)<7 or len(ip_address)>15:
             print(f'{ip_address} is not correct ipv4 address.')
@@ -57,7 +49,7 @@ class Server:
             return -1
     
     #At the moment well-known and registered port numbers are not usable
-    def __check_port_number__(port_number):
+    def __check_port_number__(self,port_number):
 
         if port_number < 0 or port_number > 65535:
             print(f'{port_number} is not correct port number.')
@@ -91,24 +83,33 @@ class Server:
             return
 
         if self.ip_version == 4:
-            if Server.__check_ipv4__(ip_address) == -1 or Server.__check_port_number__(port_number) == -1:
+            if self.__check_ipv4__(ip_address) == -1 or self.__check_port_number__(port_number) == -1:
                 return
             else:
                 self.ip_address = ip_address
                 self.port_number = port_number
 
         self.server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+
+        self.clients = []
+        self.nicknames = []
+        self.addresses = []
+        self.threads = []
+
+        self.coding = 'utf-8'
+        self.buffer = 1024 #Need to think about the case very sent message is over the buffer size
+
         self.server_socket.bind((self.ip_address,self.port_number))
 
     def __broadcast_message__(self,message):
-        for client in Server.clients:
-            client.send(message.encode(Server.coding))
+        for client in self.clients:
+            client.send(message.encode(self.coding))
 
     def __handle_client__(self,client):
         while True:
             try:
-                message = client.recv(Server.buffer)
-                Server.__broadcast_message__(message)
+                message = client.recv(self.buffer)
+                self.__broadcast_message__(message)
             except:
                 pass
 
@@ -119,8 +120,8 @@ class Server:
             try:
                 client_socket, client_address = self.server_socket.accept()
                 print(f'{client_socket} tries to connect.')
-                client_socket.send('N1CKN4M3'.encode(Server.coding))
-                client_nickname = client_socket.recv(Server.buffer).decode(Server.coding)
+                client_socket.send('N1CKN4M3'.encode(self.coding))
+                client_nickname = client_socket.recv(self.buffer).decode(self.coding)
 
                 #print(client_nickname)
 #
