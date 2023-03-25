@@ -127,7 +127,11 @@ class Client:
 
             try:
                 self.sent = input()
-                self.client_socket.send(self.sent.encode(self.coding))
+                if self.sent == '':
+                    pass
+                else:
+                    self.client_socket.send(f'{self.nickname}: {self.sent}'.encode(self.coding))
+                    
             except:
                 pass
 

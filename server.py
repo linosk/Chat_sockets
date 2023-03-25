@@ -1,5 +1,6 @@
 import socket
 import threading
+from datetime import datetime
 
 class Server:
 
@@ -101,31 +102,46 @@ class Server:
 
         self.server_socket.bind((self.ip_address,self.port_number))
 
-    def __broadcast_message__(self,message):
-            for client in self.clients:
-                client.send(message)
+    def __broadcast_message__(self,message,type):
+            #Type should be either msg or info
+            #Msg messages are messages sent by clients
+            #Info messages are messages about connection status of clients
+
+            message_decoded = message.decode(self.coding)
+
+            if type == 'info':
+                for client in self.clients:
+                    client.send(message)
+
+            elif type == 'msg':
+                for client in self.clients:
+                    now = datetime.now()
+                    time = now.strftime("%H:%M:%S")
+                    client.send(f'[{time}]{message_decoded}'.encode(self.coding))
+
 
     #Change accordingly to comment in __handle_cleint__(...)
-    def __remove_client__(self,client):
-        if client in self.clients:
-            index = self.clients.index(client)
-            nickname = self.nicknames[index]
+    def __remove_client__(self,index):
+        if self.clients[index] in self.clients:
             self.clients.remove(self.clients[index])
             self.nicknames.remove(self.nicknames[index])
             self.addresses.remove(self.addresses[index])
             self.threads.remove(self.threads[index])
-            return nickname
 
 
     def __handle_client__(self,client):
 
         client_stop_condition = threading.Event()
         #Get index at this point and the nicknam since every client has its own thread
-        nickname = ''
+        index = self.clients.index(client)
+        nickname = self.nicknames[index]
 
         while True:
 
             if client_stop_condition.is_set():
+                print(f'{client} got disconnected.')
+                self.__remove_client__(index)
+                self.__broadcast_message__(f'{nickname} got disconnected from the server.'.encode(self.coding),'info')
                 break
 
             try:
@@ -134,13 +150,9 @@ class Server:
 
                 if message_decoded == '':
                     client_stop_condition.set()
-                    print('TU')
-                    nickname = self.__remove_client__(client)
-                    self.__broadcast_message__(f'{nickname} disconnected from the server.')
-                    message_decoded = '1#dDASA#%BVCADDA:<fs>@3FDSIN'
 
                 else:
-                    self.__broadcast_message__(message)
+                    self.__broadcast_message__(message,'msg')
             except:
                 pass
 
@@ -150,17 +162,15 @@ class Server:
         while True:
             try:
                 client_socket, client_address = self.server_socket.accept()
-                #print(f'{client_socket} tries to connect.')
+                print(f'{client_socket} connected.')
                 client_socket.send('N1CKN4M3'.encode(self.coding))
                 client_nickname = client_socket.recv(self.buffer).decode(self.coding)
 
-                self.__broadcast_message__(f'{client_nickname} just connected to a server.'.encode(self.coding))
+                self.__broadcast_message__(f'{client_nickname} just connected to a server.'.encode(self.coding),'info')
 
                 self.clients.append(client_socket)
                 self.addresses.append(client_address)
                 self.nicknames.append(client_nickname)
-
-                print(self.clients)
 
                 client_socket.send(f'Hi {client_nickname}, welcome to the server.'.encode(self.coding))
 
