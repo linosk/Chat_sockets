@@ -110,29 +110,52 @@ class Client:
                     self.client_socket.close()
                     print('Connection terminated by server side.')
 
+                elif self.received == ' ':
+                    pass
+
                 elif self.received == 'N1CKN4M3':
                     print(self.nickname)
                     self.client_socket.send(self.nickname.encode(self.coding))
 
                 else:
                     print(self.received)
-            except:
+            
+            #DESCRIBE
+            except KeyboardInterrupt:
                 pass
 
     def __send_message__(self):
         while True:
 
             if self.stop_condition.is_set():
+                self.client_socket.send(self.sent.encode(self.coding))
                 break
 
             try:
                 self.sent = input()
+
                 if self.sent == '':
                     pass
+                elif self.sent[0] == '/':
+                    if self.sent[1:] == 'help':
+                        print('===========================================')
+                        print('/help - list usable commands')
+
+                        print('\n/disconnect - disconnect from the server')
+                        print('\n/users - prints the list of currently connected users')
+                        print('===========================================')
+                    elif self.sent[1:] == 'disconnect':
+                        self.stop_condition.set()
+                        print('You are disconnected from the server')
+                    elif self.sent[1:] == 'users':
+                        self.client_socket.send(self.sent.encode(self.coding))
+                    else:
+                        print('Unknown command, type /help to see a list of commands.')
                 else:
                     self.client_socket.send(f'{self.nickname}: {self.sent}'.encode(self.coding))
                     
-            except:
+            #DESCRIBE
+            except KeyboardInterrupt:
                 pass
 
     def connect_to_server(self,ip_address,port_number):
