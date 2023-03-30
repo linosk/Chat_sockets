@@ -98,7 +98,7 @@ class Server:
         self.threads = []
 
         self.coding = 'utf-8'
-        self.buffer = 1024 #Need to think about the case very sent message is over the buffer size
+        self.buffer = 1024 #Need to think about the case where received message is over the buffer size
 
         self.server_socket.bind((self.ip_address,self.port_number))
 
@@ -132,16 +132,27 @@ class Server:
     def __handle_client__(self,client):
 
         client_stop_condition = threading.Event()
-        #Get index at this point and the nicknam since every client has its own thread
         index = self.clients.index(client)
         nickname = self.nicknames[index]
+        
+        #To indicate the reason for connection termination
+        #0 receeived '' from client, assuming that the connection was lost
+        #1 receeived /disconnect from client, client willingly terminated connection
+        #2 server terminated connection with the client
+        connection_status_flag = -1
 
         while True:
 
-            if client_stop_condition.is_set():
-                print(f'{client} got disconnected.')
+            if client_stop_condition.is_set() and connection_status_flag == 0:
+                print(f'{client} lost connection.')
                 self.__remove_client__(index)
-                self.__broadcast_message__(f'{nickname} got disconnected from the server.'.encode(self.coding),'info')
+                self.__broadcast_message__(f'{nickname} lost connection with the server.'.encode(self.coding),'info')
+                break
+
+            elif client_stop_condition.is_set() and connection_status_flag == 1:
+                print(f'{client} disconnected.')
+                self.__remove_client__(index)
+                self.__broadcast_message__(f'{nickname} disconnected from the server.'.encode(self.coding),'info')
                 break
 
             try:
@@ -150,6 +161,19 @@ class Server:
 
                 if message_decoded == '':
                     client_stop_condition.set()
+                    connection_status_flag = 0
+
+                elif message_decoded[0] == '/':
+                    if message_decoded[1:] == 'disconnect':
+                        client_stop_condition.set()
+                        client.send(' '.encode(self.coding))
+                        connection_status_flag = 1
+                    elif message_decoded[1:] == 'users':
+                        client.send('Users:\n'.encode(self.coding))
+                        i = 1
+                        for nickname in self.nicknames:
+                            client.send(f'{i}.:: {nickname} ::.\n'.encode(self.coding))
+                            i+=1
 
                 else:
                     self.__broadcast_message__(message,'msg')
