@@ -138,17 +138,47 @@ class Client:
                     pass
                 elif self.sent[0] == '/':
                     if self.sent[1:] == 'help':
-                        print('===========================================')
+                        print('=====================================================')
                         print('/help - list usable commands')
 
-                        print('\n/disconnect - disconnect from the server')
-                        print('\n/users - prints the list of currently connected users')
-                        print('===========================================')
+                        print('\n/admin - assume admin role')
+                        print('/commands - print the list of admin commands')
+                        print('/disconnect - disconnect from the server')
+                        print('/users - print the list of currently connected users')
+                        print('=====================================================')
+                    elif self.sent[1:] == 'admin':
+                        password = input('Password: ')
+                        self.client_socket.send(f'{self.sent}P4SS{password}'.encode(self.coding))
+
+                    elif self.sent[1:] == 'commands':
+                        print('Commands that can be used by admin:')
+                        print('/kick [nickname] - kick user by nickname')
+                        print('/ban [nickanme] - ban user by nickname')
+                        
                     elif self.sent[1:] == 'disconnect':
                         self.stop_condition.set()
                         print('You are disconnected from the server')
                     elif self.sent[1:] == 'users':
                         self.client_socket.send(self.sent.encode(self.coding))
+
+                    elif self.sent[1:4] == 'ban':
+                        if len(self.sent)==4:
+                            print('Passing username as an argument required, type /commnads for more infomation')
+                        else:
+                            if self.sent[4] != ' ':
+                                print('Not correct usage of command, type /commnads for more infomation')
+                            else:
+                                self.client_socket.send(self.sent.encode(self.coding))
+
+                    elif self.sent[1:5] == 'kick':
+                        if len(self.sent)==5:
+                            print('Passing username as an argument required, type /commnads for more infomation')
+                        else:
+                            if self.sent[5] != ' ':
+                                print('Not correct usage of command, type /commnads for more infomation')
+                            else:
+                                self.client_socket.send(self.sent.encode(self.coding))
+
                     else:
                         print('Unknown command, type /help to see a list of commands.')
                 else:

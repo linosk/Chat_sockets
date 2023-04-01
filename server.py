@@ -141,6 +141,8 @@ class Server:
         #2 server terminated connection with the client
         connection_status_flag = -1
 
+        is_admin = False
+
         while True:
 
             if client_stop_condition.is_set() and connection_status_flag == 0:
@@ -164,7 +166,13 @@ class Server:
                     connection_status_flag = 0
 
                 elif message_decoded[0] == '/':
-                    if message_decoded[1:] == 'disconnect':
+                    print(message_decoded[6:])
+                    if message_decoded[1:6] == 'admin':
+                        if message_decoded[6:] == 'P4SSQwerty123':
+                            is_admin = True
+                        else:
+                            client.send('Wrong password'.encode(self.coding))
+                    elif message_decoded[1:] == 'disconnect':
                         client_stop_condition.set()
                         client.send(' '.encode(self.coding))
                         connection_status_flag = 1
@@ -174,6 +182,14 @@ class Server:
                         for nickname in self.nicknames:
                             client.send(f'{i}.:: {nickname} ::.\n'.encode(self.coding))
                             i+=1
+
+                elif message_decoded[1:4] == 'ban':
+                    if is_admin:
+                        pass
+                    else:
+                        client.send('Only admin can use this command')
+
+                    #elif 
 
                 else:
                     self.__broadcast_message__(message,'msg')
