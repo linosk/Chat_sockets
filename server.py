@@ -166,11 +166,13 @@ class Server:
                     connection_status_flag = 0
 
                 elif message_decoded[0] == '/':
-                    print(message_decoded[6:])
                     if message_decoded[1:6] == 'admin':
+                        print(f'{nickname} wants to be an admin.')
                         if message_decoded[6:] == 'P4SSQwerty123':
+                            print(f'{nickname} becomes an admin.')
                             is_admin = True
                         else:
+                            print(f'{nickname} typed a wrong password.')
                             client.send('Wrong password'.encode(self.coding))
                     elif message_decoded[1:] == 'disconnect':
                         client_stop_condition.set()
@@ -183,13 +185,22 @@ class Server:
                             client.send(f'{i}.:: {nickname} ::.\n'.encode(self.coding))
                             i+=1
 
-                elif message_decoded[1:4] == 'ban':
-                    if is_admin:
-                        pass
-                    else:
-                        client.send('Only admin can use this command')
+                    elif message_decoded[1:4] == 'ban':
+                        if is_admin:
+                            pass
+                        else:
+                            client.send('Only admin can use this command'.encode(self.coding))
 
-                    #elif 
+                    elif message_decoded[1:5] == 'kick':
+                        if is_admin:
+                            if message_decoded[6:] in self.nicknames:
+                                print('YES')
+                            else:
+                                print('NO')
+                        else:
+                            client.send('Only admin can use this command'.encode(self.coding))
+
+                        #elif 
 
                 else:
                     self.__broadcast_message__(message,'msg')

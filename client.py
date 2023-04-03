@@ -128,7 +128,7 @@ class Client:
         while True:
 
             if self.stop_condition.is_set():
-                self.client_socket.send(self.sent.encode(self.coding))
+                #self.client_socket.send(self.sent.encode(self.coding))
                 break
 
             try:
@@ -182,7 +182,8 @@ class Client:
                     else:
                         print('Unknown command, type /help to see a list of commands.')
                 else:
-                    self.client_socket.send(f'{self.nickname}: {self.sent}'.encode(self.coding))
+                    pass
+                    #self.client_socket.send(f'{self.nickname}: {self.sent}'.encode(self.coding))
                     
             #DESCRIBE
             except KeyboardInterrupt:
