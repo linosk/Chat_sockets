@@ -138,7 +138,7 @@ class Server:
         #To indicate the reason for connection termination
         #0 receeived '' from client, assuming that the connection was lost
         #1 receeived /disconnect from client, client willingly terminated connection
-        #2 server terminated connection with the client
+        #2 admin kicked user from server
         connection_status_flag = -1
 
         is_admin = False
@@ -148,13 +148,19 @@ class Server:
             if client_stop_condition.is_set() and connection_status_flag == 0:
                 print(f'{client} lost connection.')
                 self.__remove_client__(index)
-                self.__broadcast_message__(f'{nickname} lost connection with the server.'.encode(self.coding),'info')
+                self.__broadcast_message__(f'{nickname} lost connection to the server.'.encode(self.coding),'info')
                 break
 
             elif client_stop_condition.is_set() and connection_status_flag == 1:
                 print(f'{client} disconnected.')
                 self.__remove_client__(index)
                 self.__broadcast_message__(f'{nickname} disconnected from the server.'.encode(self.coding),'info')
+                break
+
+            elif client_stop_condition.is_set() and connection_status_flag == 2:
+                print(f'{nickname} was kicked.')
+                self.__remove_client__(index)
+                self.__broadcast_message__(f'{nickname} was kicked from the server.'.encode(self.coding),'info')
                 break
 
             try:
@@ -164,6 +170,10 @@ class Server:
                 if message_decoded == '':
                     client_stop_condition.set()
                     connection_status_flag = 0
+
+                elif message_decoded == 'K1CK':
+                    client_stop_condition.set()
+                    connection_status_flag = 2
 
                 elif message_decoded[0] == '/':
                     if message_decoded[1:6] == 'admin':
@@ -189,16 +199,20 @@ class Server:
                         if is_admin:
                             pass
                         else:
-                            client.send('Only admin can use this command'.encode(self.coding))
+                            client.send('Only admin can use this command.'.encode(self.coding))
 
                     elif message_decoded[1:5] == 'kick':
                         if is_admin:
                             if message_decoded[6:] in self.nicknames:
-                                print('YES')
+                                kicked_user_nickname = message_decoded[6:]
+                                kicked_user_index = self.nicknames.index(kicked_user_nickname)
+                                kicked_user = self.clients[kicked_user_index]
+                                kicked_user.send(f'K1CK'.encode(self.coding))
                             else:
-                                print('NO')
+                                client.send(f'{message_decoded[6:]} is not connected to a server.'.encode(self.coding))
+
                         else:
-                            client.send('Only admin can use this command'.encode(self.coding))
+                            client.send('Only admin can use this command.'.encode(self.coding))
 
                         #elif 
 
