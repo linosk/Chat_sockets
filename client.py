@@ -117,6 +117,12 @@ class Client:
                     print(self.nickname)
                     self.client_socket.send(self.nickname.encode(self.coding))
 
+                elif self.received == 'K1CK':
+                    self.stop_condition.set()
+                    self.client_socket.close()
+                    self.client_socket.send(self.received.encode(self.coding))
+                    print('You have been kicked from server.')
+
                 else:
                     print(self.received)
             
@@ -128,7 +134,7 @@ class Client:
         while True:
 
             if self.stop_condition.is_set():
-                self.client_socket.send(self.sent.encode(self.coding))
+                #self.client_socket.send(self.sent.encode(self.coding))
                 break
 
             try:
@@ -180,7 +186,7 @@ class Client:
                                 self.client_socket.send(self.sent.encode(self.coding))
 
                     else:
-                        print('Unknown command, type /help to see a list of commands.')
+                        print('Unknown command, type /help to see a list of commands')
                 else:
                     self.client_socket.send(f'{self.nickname}: {self.sent}'.encode(self.coding))
                     
