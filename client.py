@@ -95,9 +95,9 @@ class Client:
         self.stop_condition = threading.Event()
     
     def __receive_message__(self):
-        #Should sending answers to special words be performed in receive function?
         while True:
 
+            #When the condition is set the loop stops, it allows "stop" threads safely 
             if self.stop_condition.is_set():
                 break
 
@@ -110,87 +110,65 @@ class Client:
                     self.client_socket.close()
                     print('Connection terminated by server side.')
 
+                #Space is send by server when client disconnects, it is a way of safely "stoping" thread used to receive messages
                 elif self.received == ' ':
                     pass
 
+                #When connecting server sends special message N1CKN4M3 to ask user for a nickname
                 elif self.received == 'N1CKN4M3':
                     print(self.nickname)
                     self.client_socket.send(self.nickname.encode(self.coding))
 
-                elif self.received == 'K1CK':
-                    self.stop_condition.set()
-                    self.client_socket.close()
-                    self.client_socket.send(self.received.encode(self.coding))
-                    print('You have been kicked from server.')
-
                 else:
                     print(self.received)
             
-            #DESCRIBE
+            #There is a possibility that client will use Ctrl + C to terminate application
             except KeyboardInterrupt:
                 pass
 
     def __send_message__(self):
         while True:
 
+            #When the condition is set the loop stops, it allows "stop" threads safely 
             if self.stop_condition.is_set():
-                #self.client_socket.send(self.sent.encode(self.coding))
+                self.client_socket.send(self.sent.encode(self.coding))
                 break
 
             try:
                 self.sent = input()
 
+                #User is unable to send empty message
                 if self.sent == '':
                     pass
+
+                #User is unable to sent message consisting of only space
+                elif self.sent == ' ':
+                    pass
+
+                #Input starting '/' means that user tries to use a command
                 elif self.sent[0] == '/':
                     if self.sent[1:] == 'help':
                         print('=====================================================')
                         print('/help - list usable commands')
 
-                        print('\n/admin - assume admin role')
-                        print('/commands - print the list of admin commands')
-                        print('/disconnect - disconnect from the server')
+                        print('\n/disconnect - disconnect from the server')
                         print('/users - print the list of currently connected users')
                         print('=====================================================')
-                    elif self.sent[1:] == 'admin':
-                        password = input('Password: ')
-                        self.client_socket.send(f'{self.sent}P4SS{password}'.encode(self.coding))
-
-                    elif self.sent[1:] == 'commands':
-                        print('Commands that can be used by admin:')
-                        print('/kick [nickname] - kick user by nickname')
-                        print('/ban [nickanme] - ban user by nickname')
                         
                     elif self.sent[1:] == 'disconnect':
                         self.stop_condition.set()
                         print('You are disconnected from the server')
+                        
                     elif self.sent[1:] == 'users':
                         self.client_socket.send(self.sent.encode(self.coding))
 
-                    elif self.sent[1:4] == 'ban':
-                        if len(self.sent)==4:
-                            print('Passing username as an argument required, type /commnads for more infomation')
-                        else:
-                            if self.sent[4] != ' ':
-                                print('Not correct usage of command, type /commnads for more infomation')
-                            else:
-                                self.client_socket.send(self.sent.encode(self.coding))
-
-                    elif self.sent[1:5] == 'kick':
-                        if len(self.sent)==5:
-                            print('Passing username as an argument required, type /commnads for more infomation')
-                        else:
-                            if self.sent[5] != ' ':
-                                print('Not correct usage of command, type /commnads for more infomation')
-                            else:
-                                self.client_socket.send(self.sent.encode(self.coding))
-
                     else:
                         print('Unknown command, type /help to see a list of commands')
+
                 else:
                     self.client_socket.send(f'{self.nickname}: {self.sent}'.encode(self.coding))
                     
-            #DESCRIBE
+            #There is a possibility that client will use Ctrl + C to terminate application
             except KeyboardInterrupt:
                 pass
 

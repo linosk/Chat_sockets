@@ -104,8 +104,8 @@ class Server:
 
     def __broadcast_message__(self,message,type):
             #Type should be either msg or info
-            #Msg messages are messages sent by clients
-            #Info messages are messages about connection status of clients
+            #Msg messages are sent by clients
+            #Info messages are about connection status of clients
 
             message_decoded = message.decode(self.coding)
 
@@ -119,16 +119,16 @@ class Server:
                     time = now.strftime("%H:%M:%S")
                     client.send(f'[{time}]{message_decoded}'.encode(self.coding))
 
-
-    #Change accordingly to comment in __handle_cleint__(...)
-    def __remove_client__(self,index):
+    #It removes clients records from every list
+    def __remove_client__(self,client):
+        index = self.clients.index(client)
         if self.clients[index] in self.clients:
             self.clients.remove(self.clients[index])
             self.nicknames.remove(self.nicknames[index])
             self.addresses.remove(self.addresses[index])
             self.threads.remove(self.threads[index])
 
-
+    #This is the main function handles everything about user
     def __handle_client__(self,client):
 
         client_stop_condition = threading.Event()
@@ -138,56 +138,39 @@ class Server:
         #To indicate the reason for connection termination
         #0 receeived '' from client, assuming that the connection was lost
         #1 receeived /disconnect from client, client willingly terminated connection
-        #2 admin kicked user from server
         connection_status_flag = -1
-
-        is_admin = False
 
         while True:
 
             if client_stop_condition.is_set() and connection_status_flag == 0:
                 print(f'{client} lost connection.')
-                self.__remove_client__(index)
+                self.__remove_client__(client)
                 self.__broadcast_message__(f'{nickname} lost connection to the server.'.encode(self.coding),'info')
                 break
 
             elif client_stop_condition.is_set() and connection_status_flag == 1:
                 print(f'{client} disconnected.')
-                self.__remove_client__(index)
+                self.__remove_client__(client)
                 self.__broadcast_message__(f'{nickname} disconnected from the server.'.encode(self.coding),'info')
-                break
-
-            elif client_stop_condition.is_set() and connection_status_flag == 2:
-                print(f'{nickname} was kicked.')
-                self.__remove_client__(index)
-                self.__broadcast_message__(f'{nickname} was kicked from the server.'.encode(self.coding),'info')
                 break
 
             try:
                 message = client.recv(self.buffer)
                 message_decoded = message.decode(self.coding)
 
+                #Receiving an empty message from the client should not be possible, assuming that they lost connection
                 if message_decoded == '':
                     client_stop_condition.set()
                     connection_status_flag = 0
 
-                elif message_decoded == 'K1CK':
-                    client_stop_condition.set()
-                    connection_status_flag = 2
-
+                #Handling any upcoming commands from client
                 elif message_decoded[0] == '/':
-                    if message_decoded[1:6] == 'admin':
-                        print(f'{nickname} wants to be an admin.')
-                        if message_decoded[6:] == 'P4SSQwerty123':
-                            print(f'{nickname} becomes an admin.')
-                            is_admin = True
-                        else:
-                            print(f'{nickname} typed a wrong password.')
-                            client.send('Wrong password'.encode(self.coding))
-                    elif message_decoded[1:] == 'disconnect':
+
+                    if message_decoded[1:] == 'disconnect':
                         client_stop_condition.set()
                         client.send(' '.encode(self.coding))
                         connection_status_flag = 1
+
                     elif message_decoded[1:] == 'users':
                         client.send('Users:\n'.encode(self.coding))
                         i = 1
@@ -195,35 +178,16 @@ class Server:
                             client.send(f'{i}.:: {nickname} ::.\n'.encode(self.coding))
                             i+=1
 
-                    elif message_decoded[1:4] == 'ban':
-                        if is_admin:
-                            pass
-                        else:
-                            client.send('Only admin can use this command.'.encode(self.coding))
-
-                    elif message_decoded[1:5] == 'kick':
-                        if is_admin:
-                            if message_decoded[6:] in self.nicknames:
-                                kicked_user_nickname = message_decoded[6:]
-                                kicked_user_index = self.nicknames.index(kicked_user_nickname)
-                                kicked_user = self.clients[kicked_user_index]
-                                kicked_user.send(f'K1CK'.encode(self.coding))
-                            else:
-                                client.send(f'{message_decoded[6:]} is not connected to a server.'.encode(self.coding))
-
-                        else:
-                            client.send('Only admin can use this command.'.encode(self.coding))
-
-                        #elif 
-
                 else:
                     self.__broadcast_message__(message,'msg')
+
             except:
                 pass
 
     def server_start(self):
         self.server_socket.listen()
         print('Awaiting connections...')
+
         while True:
             try:
                 client_socket, client_address = self.server_socket.accept()
@@ -244,6 +208,7 @@ class Server:
                 if client_thread not in self.threads:
                     self.threads.append(client_thread)
 
+            ##There is a possibility that server application will be terminated by usage of Ctrl + C
             except KeyboardInterrupt:
                 self.server_socket.close()
                 print('\nServer application terminated by keyboard interrupt.')
